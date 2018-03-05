@@ -1,11 +1,11 @@
 <?php
 /**
- *  * @package    VK - Group dogs remover
- *  * @version    1.0.0
- *  * @author     Igor Berdicheskiy - septdir.ru
- *  * @copyright  Copyright (c) 2013 - 2017 Igor Berdicheskiy. All rights reserved.
- *  * @license    GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
- *  * @link       https://septdir.ru
+ * @package    VK - Group dogs remover
+ * @version    1.0.3
+ * @author     Igor Berdicheskiy - septdir.ru
+ * @copyright  Copyright (c) 2013 - 2018 Igor Berdicheskiy. All rights reserved.
+ * @license    GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
+ * @link       https://septdir.ru
  */
 
 ini_set('display_errors', 1);
@@ -22,11 +22,12 @@ class vkApi
 
 		if (!empty($method) && count($params) > 0)
 		{
-			$query = array();
+			$query = array('v'=> '5.8');
 			foreach ($params as $param)
 			{
 				$query[$param['name']] = $param['value'];
 			}
+
 			$url = 'https://api.vk.com/method/' . $method . '?' . http_build_query($query);
 
 			if (function_exists('curl_init'))
@@ -58,6 +59,10 @@ class vkApi
 		$api    = $this->send($method, $params);
 
 		$users        = new stdClass();
+		if (!empty( $api->error)) {
+			$users->error = $api->error;
+			return $users;
+		}
 		$users->total = $api->response->count;
 		$users->count = count($api->response->users);
 		$users->array = $api->response->users;
@@ -72,7 +77,7 @@ class vkApi
 		{
 			if (!empty($user->deactivated))
 			{
-				$dogs[$user->uid] = $user;
+				$dogs[$user->id] = $user;
 			}
 
 		}
@@ -88,10 +93,10 @@ class vkApi
 			$dogsdata = '';
 			if (!empty($user->deactivated))
 			{
-				$dogsdata = ' data-dog="' . $user->uid . '"';
+				$dogsdata = ' data-dog="' . $user->id . '"';
 			}
 			$name = $user->first_name . ' ' . $user->last_name;
-			$html .= '<div id="' . $user->uid . '" class="uk-width-1-6@m"' . $dogsdata . ' >';
+			$html .= '<div id="' . $user->id . '" class="uk-width-1-6@m"' . $dogsdata . ' >';
 			$html .= '<div class="uk-card uk-card-default uk-text-center uk-height-1-1">';
 			$html .= '<div class="">';
 			$html .= '<img src="' . $user->photo_max . '" alt="' . $name . '" class="uk-width-1-1" />';
@@ -121,6 +126,10 @@ $api    = new vkApi();
 if ($task == 'getMembers')
 {
 	$users = $api->getMembers($params);
+	if (!empty($users->error)) {
+		echo print_r($users->error, true);
+		exit();
+	}
 	$dogs  = $api->getDogs($users->array);
 	$html  = $api->getMembersHTML($users->array);
 
